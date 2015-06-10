@@ -54,18 +54,18 @@
 %%% Change the function below to return the bname of the node where the
 %%% messenger server runs
 server_node() ->
-    messenger@bill.
+    messenger@noesmia.
 
 %%% This is the server process for the "messenger"
 %%% the user list has the format [{ ClientPid1, Name1 }, { ClientPid22, Name2 },...]
 server(User_List) ->
     receive
         { From, logon, Name } ->
-            New_User_List = server_logon(From, User_List),
+            New_User_List = server_logon(From, Name, User_List),
             server(New_User_List);
 
         { From, logoff } ->
-            New_User_List = server_loggof(From, User_List),
+            New_User_List = server_logoff(From, User_List),
             server(New_User_List);
 
         { From, message_to, To, Message } ->
@@ -102,7 +102,19 @@ server_transfer(From, To, Message, User_List) ->
             From ! { messenger, stop, you_are_not_logged_on };
 
         { value, { From, Name } } ->
-            server_transfer(From, Name, To, Message, User_List) ->
+            server_transfer(From, Name, To, Message, User_List)
+    end.
+
+%%% If the user exists, send the message
+server_transfer(From, Name, To, Message, User_List) ->
+    %% Find the receiver and send the message
+    case lists:keysearch(To, 2, User_List) of
+       false ->
+            From ! {messenger, receiver_not_found}; 
+
+       { value, { ToPid, To } } ->
+           ToPid ! {message_from, Name, Message},
+           From ! {messenger, sent}
     end.
 
 %%% User Commands
@@ -111,7 +123,7 @@ logon(Name) ->
         undefined ->
             register(mess_client,
                      spawn(messenger, client, [server_node(), Name]));
-         -> already_logged_on
+       _ -> already_logged_on
     end.
 
 logoff() ->
@@ -121,7 +133,7 @@ message(ToName, Message) ->
     case whereis(mess_client) of % Test if the client is running
        undefined ->
             not_logged_on;
-        -> mess_client ! { message_to, ToName, Message},
+       _ -> mess_client ! { message_to, ToName, Message},
            ok
 end.
 
