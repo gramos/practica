@@ -110,11 +110,11 @@ server_transfer(From, Name, To, Message, User_List) ->
     %% Find the receiver and send the message
     case lists:keysearch(To, 2, User_List) of
        false ->
-            From ! {messenger, receiver_not_found}; 
+            From ! { essenger, receiver_not_found }; 
 
        { value, { ToPid, To } } ->
-           ToPid ! {message_from, Name, Message},
-           From ! {messenger, sent}
+           ToPid ! { message_from, Name, Message },
+           From ! { messenger, sent }
     end.
 
 %%% User Commands
@@ -122,7 +122,7 @@ logon(Name) ->
     case whereis(mess_client) of
         undefined ->
             register(mess_client,
-                     spawn(messenger, client, [server_node(), Name]));
+                     spawn( messenger, client, [ server_node(), Name ] ));
        _ -> already_logged_on
     end.
 
@@ -139,7 +139,7 @@ end.
 
 %%% The client process which runs on each server node
 client(Server_Node, Name) ->
-    {messenger, Server_Node} ! {self(), logon, Name},
+    { messenger, Server_Node } ! { self(), logon, Name },
     await_result(),
     client(Server_Node).
 
@@ -149,21 +149,21 @@ client(Server_Node) ->
             {messenger, Server_Node} ! {self(), logoff},
             exit(normal);
 
-        {message_to, ToName, Message} ->
-            {messenger, Server_Node} ! {self(), message_to, ToName, Message},
+        { message_to, ToName, Message } ->
+            { messenger, Server_Node } ! { self(), message_to, ToName, Message },
             await_result();
 
-        {message_from, FromName, Message} ->
-            io:format("Message from ~p: ~p~n", [FromName, Message])
+        { message_from, FromName, Message } ->
+            io:format("Message from ~p: ~p~n", [ FromName, Message ])
     end,
     client(Server_Node).
 
 %%% wait for a response from the server
 await_result() ->
     receive
-        {messenger, stop, Why} -> % Stop the client
+        { messenger, stop, Why } -> % Stop the client
             io:format("~p~n", [Why]),
             exit(normal);
-        {messenger, What} -> % Normal response
+        { messenger, What } -> % Normal response
             io:format("~p~n", [What])
    end.
