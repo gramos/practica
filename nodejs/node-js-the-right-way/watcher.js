@@ -1,6 +1,8 @@
-const fs = require('fs');
+//const fs = require('fs');
 
-fs.watch('target.txt', function() {
+const watch = require('fs').watch
+
+watch('target.txt', function() {
   console.log("File 'target.txt' just changed!");
 });
 
